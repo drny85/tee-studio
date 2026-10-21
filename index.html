@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TEE STUDIO // Local Apparel & Graphic Mockup Lab</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Hidden File Inputs (100% Local Browser Processing) -->
+  <input type="file" id="pngFileInput" accept="image/png,image/jpeg,image/webp,image/svg+xml" multiple hidden />
+  <input type="file" id="importJsonInput" accept=".json,application/json" hidden />
+
+  <!-- Top Studio Header -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-logo">T</div>
+      <div class="brand-title">
+        <span>TEE STUDIO</span>
+        <span class="badge-local">100% Local • Offline Ready</span>
+      </div>
+    </div>
+
+    <div class="topbar-center">
+      <button class="btn btn-icon" id="undoBtn" title="Undo (Cmd/Ctrl + Z)">↶</button>
+      <input
+        type="text"
+        id="projectNameInput"
+        class="project-name-input"
+        value="Untitled Heavy Tee"
+        aria-label="Project Name"
+      />
+      <button class="btn btn-sm" id="saveLibraryBtn" title="Save to browser Local Library">
+        ★ Save to Library
+      </button>
+    </div>
+
+    <div class="topbar-actions">
+      <button class="btn btn-sm" id="importJsonBtn" title="Load .teestudio.json file">
+        Load File
+      </button>
+      <button class="btn btn-sm" id="exportJsonBtn" title="Save .teestudio.json file to disk">
+        Save File
+      </button>
+      <button class="btn" id="techPackBtn" title="Generate Front + Back Spec Sheet">
+        Tech Pack Sheet
+      </button>
+      <button class="btn btn-primary" id="exportMockupBtn">
+        ↓ Export HD PNG
+      </button>
+    </div>
+  </header>
+
+  <!-- Main 3-Column Studio Workspace -->
+  <main class="workspace">
+    <!-- LEFT SIDEBAR: Uploads, Layers, Starter Graphics, Text, Saved Library -->
+    <aside class="sidebar">
+      <nav class="panel-tabs">
+        <button class="panel-tab active" data-tab="graphics">
+          <span>🖼</span>
+          <span>Graphics</span>
+        </button>
+        <button class="panel-tab" data-tab="presets">
+          <span>✦</span>
+          <span>Starters</span>
+        </button>
+        <button class="panel-tab" data-tab="necktag">
+          <span>🏷</span>
+          <span>Neck Tag</span>
+        </button>
+        <button class="panel-tab" data-tab="saved">
+          <span>📁</span>
+          <span>Library</span>
+        </button>
+      </nav>
+
+      <!-- TAB 1: GRAPHICS & LAYERS -->
+      <div class="panel-scroll" data-tab-panel="graphics">
+        <div class="section">
+          <button class="btn btn-Upload" id="topUploadBtn">
+            + Upload PNG / Graphic
+          </button>
+
+          <div class="dropzone" id="uploadDropzone">
+            <div class="dropzone-icon">⬆</div>
+            <div class="dropzone-title">Drop PNG, SVG, WebP, or JPG</div>
+            <div class="dropzone-sub">Or paste directly with Cmd+V / Ctrl+V</div>
+          </div>
+
+          <button class="btn" id="addTextLayerBtn" style="width: 100%;">
+            Aa Add Streetwear Typography Layer
+          </button>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="section">
+          <div class="section-header">
+            <span>Active View Layers</span>
+            <span id="layerCountBadge" class="badge-local">0</span>
+          </div>
+          <div id="layerList" class="layer-list"></div>
+        </div>
+      </div>
+
+      <!-- TAB 2: STARTER GRAPHICS -->
+      <div class="panel-scroll" data-tab-panel="presets" style="display: none;">
+        <div class="section">
+          <div class="section-header">
+            <span>Built-In Streetwear Graphics</span>
+          </div>
+          <p style="font-size: 11.5px; color: var(--text-muted);">
+            Click any graphic below to stamp it onto the current shirt view. All graphics are generated locally.
+          </p>
+          <div id="presetGrid" class="preset-grid"></div>
+        </div>
+      </div>
+
+      <!-- TAB 3: INSIDE NECK TAG & PRINT GUIDES -->
+      <div class="panel-scroll" data-tab-panel="necktag" style="display: none;">
+        <div class="section">
+          <div class="section-header">
+            <span>Inside Collar Brand Label</span>
+          </div>
+          <div class="toggle-row">
+            <span>Show Woven Neck Label</span>
+            <label class="switch">
+              <input type="checkbox" id="neckTagToggle" checked />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="control-group">
+            <label class="control-label">Brand Name (Line 1)</label>
+            <input type="text" id="neckTagTextInput" class="text-input" value="STUDIO ARCHIVE" maxlength="18" />
+          </div>
+
+          <div class="control-group">
+            <label class="control-label">Size / Origin (Line 2)</label>
+            <input type="text" id="neckTagSubInput" class="text-input" value="HEAVYWEIGHT • L" maxlength="20" />
+          </div>
+
+          <div class="toggle-row">
+            <span>Dark Woven Tag Style</span>
+            <label class="switch">
+              <input type="checkbox" id="neckTagDarkToggle" />
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="section">
+          <div class="section-header">
+            <span>Print Area & Guides</span>
+          </div>
+          <div class="toggle-row">
+            <span>Show 16"×20" Platen Guide</span>
+            <label class="switch">
+              <input type="checkbox" id="showGuidesToggle" />
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="toggle-row">
+            <span>Clip Graphics to Platen Box</span>
+            <label class="switch">
+              <input type="checkbox" id="clipPrintBoxToggle" />
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: SAVED LOCAL LIBRARY -->
+      <div class="panel-scroll" data-tab-panel="saved" style="display: none;">
+        <div class="section">
+          <div class="section-header">
+            <span>Saved In Browser</span>
+          </div>
+          <div id="savedDesignsList" class="layer-list"></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CENTER STAGE: Interactive High-DPI Shirt Viewport -->
+    <section class="stage-container backdrop-dark" id="stageContainer">
+      <!-- Top Floating View Switcher -->
+      <div class="stage-top-bar">
+        <div class="segmented-pill">
+          <button class="pill-btn active" data-view="front">Front View</button>
+          <button class="pill-btn" data-view="back">Back View</button>
+        </div>
+      </div>
+
+      <!-- Main Interactive HTML5 Canvas -->
+      <div class="canvas-wrapper">
+        <canvas id="studioCanvas" width="1000" height="1120"></canvas>
+      </div>
+
+      <!-- Bottom Floating Stage Bar (Backdrop Selector + Hints) -->
+      <div class="stage-bottom-bar">
+        <span style="font-size: 11px; color: var(--text-secondary); margin-right: 4px;">Backdrop:</span>
+        <button class="btn btn-sm" data-backdrop="dark">Studio Dark</button>
+        <button class="btn btn-sm" data-backdrop="concrete">Concrete</button>
+        <button class="btn btn-sm" data-backdrop="light">Daylight</button>
+        <button class="btn btn-sm" data-backdrop="grid">Tech Grid</button>
+        <button class="btn btn-sm" data-backdrop="transparent">Transparent PNG</button>
+      </div>
+    </section>
+
+    <!-- RIGHT SIDEBAR: Garment Silhouette, Color Dye Studio, Fabric Wash & Active Graphic Inspector -->
+    <aside class="sidebar sidebar-right">
+      <div class="panel-scroll">
+        <!-- 1. GARMENT SILHOUETTE -->
+        <div class="section">
+          <div class="section-header">
+            <span>1. Garment Silhouette</span>
+          </div>
+          <div class="garment-grid">
+            <button class="garment-btn" data-garment="classic-tee">
+              <span>👕</span>
+              <span>Classic Crew</span>
+            </button>
+            <button class="garment-btn active" data-garment="boxy-tee">
+              <span>🧥</span>
+              <span>Boxy Heavy</span>
+            </button>
+            <button class="garment-btn" data-garment="ringer-tee">
+              <span>🎽</span>
+              <span>Ringer Trim</span>
+            </button>
+            <button class="garment-btn" data-garment="longsleeve">
+              <span>🥋</span>
+              <span>Long Sleeve</span>
+            </button>
+            <button class="garment-btn" data-garment="hoodie">
+              <span>🥷</span>
+              <span>Street Hoodie</span>
+            </button>
+            <button class="garment-btn" data-garment="tank">
+              <span>🎽</span>
+              <span>Muscle Tank</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- 2. GARMENT COLOR & DYE -->
+        <div class="section">
+          <div class="section-header">
+            <span>2. Garment Color & Dye</span>
+          </div>
+
+          <div id="swatchGrid" class="swatch-grid"></div>
+
+          <div class="color-picker-row">
+            <div class="color-input-wrapper">
+              <input type="color" id="bodyColorPicker" value="#141416" />
+            </div>
+            <span style="flex: 1; font-size: 12px; font-weight: 500;">Custom Body Color</span>
+            <input type="text" id="bodyHexInput" class="hex-input" value="#141416" maxlength="7" />
+          </div>
+
+          <!-- Optional Contrast Sleeves / Collar -->
+          <div class="toggle-row">
+            <span style="font-size: 11.5px; color: var(--text-secondary);">Match Sleeves to Body</span>
+            <label class="switch">
+              <input type="checkbox" id="syncSleevesToggle" checked />
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="color-picker-row" id="sleeveColorRow" style="display: none;">
+            <div class="color-input-wrapper">
+              <input type="color" id="sleeveColorPicker" value="#141416" />
+            </div>
+            <span style="flex: 1; font-size: 12px;">Sleeves Contrast Color</span>
+          </div>
+
+          <div class="toggle-row">
+            <span style="font-size: 11.5px; color: var(--text-secondary);">Match Collar Rib to Body</span>
+            <label class="switch">
+              <input type="checkbox" id="syncCollarToggle" checked />
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="color-picker-row" id="collarColorRow" style="display: none;">
+            <div class="color-input-wrapper">
+              <input type="color" id="collarColorPicker" value="#f8fafc" />
+            </div>
+            <span style="flex: 1; font-size: 12px;">Collar / Ribbing Color</span>
+          </div>
+
+          <!-- Fabric Texture & Vintage Wash -->
+          <div class="control-group" style="margin-top: 4px;">
+            <div class="control-label">
+              <span>3D Wrinkle & Cotton Weave</span>
+              <span class="control-value" id="fabricTextureVal">65%</span>
+            </div>
+            <input type="range" id="fabricTextureSlider" min="0" max="100" value="65" />
+          </div>
+
+          <div class="control-group">
+            <div class="control-label">
+              <span>Vintage Pigment / Acid Wash</span>
+              <span class="control-value" id="vintageWashVal">12%</span>
+            </div>
+            <input type="range" id="vintageWashSlider" min="0" max="100" value="12" />
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- 3. ACTIVE GRAPHIC / LAYER INSPECTOR -->
+        <div class="section">
+          <div class="section-header">
+            <span>3. Graphic Placement & Ink</span>
+          </div>
+
+          <div id="noLayerSelectedNotice" class="empty-box" style="display: none;">
+            Click a graphic on the shirt (or upload a PNG) to resize, position, remove background, or blend into the fabric.
+          </div>
+
+          <div id="activeLayerControls" style="display: flex; flex-direction: column; gap: 12px;">
+            <!-- Quick Placement Presets -->
+            <div class="control-group">
+              <span class="control-label">Quick Placement Snap</span>
+              <div class="placement-grid">
+                <button class="placement-btn" data-preset="centerChest">Center Chest</button>
+                <button class="placement-btn" data-preset="oversizedFront">Oversized</button>
+                <button class="placement-btn" data-preset="leftPocket">Left Pocket</button>
+                <button class="placement-btn" data-preset="rightChest">Right Chest</button>
+                <button class="placement-btn" data-preset="backYoke">Neck Yoke</button>
+                <button class="placement-btn" data-preset="bottomHem">Hem Tag</button>
+              </div>
+            </div>
+
+            <!-- Scale, Rotation, Opacity -->
+            <div class="control-group">
+              <div class="control-label">
+                <span>Graphic Size (Scale)</span>
+                <span class="control-value" id="layerScaleVal">100%</span>
+              </div>
+              <input type="range" id="layerScaleSlider" min="10" max="220" value="100" />
+            </div>
+
+            <div class="control-group">
+              <div class="control-label">
+                <span>Rotation Angle</span>
+                <span class="control-value" id="layerRotateVal">0°</span>
+              </div>
+              <input type="range" id="layerRotateSlider" min="-180" max="180" value="0" />
+            </div>
+
+            <div class="control-group">
+              <div class="control-label">
+                <span>Ink Opacity</span>
+                <span class="control-value" id="layerOpacityVal">100%</span>
+              </div>
+              <input type="range" id="layerOpacitySlider" min="5" max="100" value="100" />
+            </div>
+
+            <div class="control-group">
+              <label class="control-label">Fabric Ink Blend Mode</label>
+              <select id="layerBlendSelect" class="select-input">
+                <option value="source-over">Plastisol Ink (Standard Crisp)</option>
+                <option value="multiply">Water-Based Dye (Multiply on Light Tees)</option>
+                <option value="screen">Discharge Print (Screen on Dark Tees)</option>
+                <option value="overlay">Soft Vintage Blend (Overlay)</option>
+                <option value="difference">Invert / Acid Contrast</option>
+              </select>
+            </div>
+
+            <!-- Transform Action Row -->
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;">
+              <button class="btn btn-sm" id="centerHBtn" title="Center Horizontally">Center</button>
+              <button class="btn btn-sm" id="flipHBtn" title="Flip Horizontal">Flip H</button>
+              <button class="btn btn-sm" id="flipVBtn" title="Flip Vertical">Flip V</button>
+              <button class="btn btn-sm" id="duplicateLayerBtn" title="Duplicate (Cmd+D)">Clone</button>
+            </div>
+
+            <!-- IMAGE-ONLY CONTROLS (Background Knockout, Tint, Distress) -->
+            <div id="imageSpecificControls" style="display: flex; flex-direction: column; gap: 10px;">
+              <div class="divider"></div>
+              <div class="section-header">
+                <span>PNG Studio Tools</span>
+              </div>
+
+              <!-- Local 1-Click Background Remover -->
+              <div class="toggle-row">
+                <span style="font-size: 12px; font-weight: 500;">Knockout Solid Background</span>
+                <label class="switch">
+                  <input type="checkbox" id="removeBgToggle" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <div id="bgKnockoutSubControls" style="display: none; flex-direction: column; gap: 8px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 6px;">
+                <div class="color-picker-row">
+                  <div class="color-input-wrapper">
+                    <input type="color" id="bgKeyColorPicker" value="#ffffff" />
+                  </div>
+                  <span style="font-size: 11.5px;">Key Color to Remove</span>
+                </div>
+                <div class="control-group">
+                  <div class="control-label">
+                    <span>Color Tolerance</span>
+                    <span class="control-value" id="bgToleranceVal">28%</span>
+                  </div>
+                  <input type="range" id="bgToleranceSlider" min="2" max="85" value="28" />
+                </div>
+              </div>
+
+              <!-- Graphic Color Tint Override -->
+              <div class="toggle-row">
+                <span style="font-size: 12px;">Recolor / Tint Graphic</span>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <div class="color-input-wrapper" style="width: 22px; height: 22px;">
+                    <input type="color" id="tintColorPicker" value="#ffffff" />
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" id="tintGraphicToggle" />
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Vintage Cracked Ink Distress -->
+              <div class="control-group">
+                <div class="control-label">
+                  <span>Cracked / Vintage Ink Distress</span>
+                  <span class="control-value" id="distressVal">0%</span>
+                </div>
+                <input type="range" id="distressSlider" min="0" max="100" value="0" />
+              </div>
+
+              <!-- Brightness & Contrast -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div class="control-group">
+                  <span class="control-label">Brightness</span>
+                  <input type="range" id="brightnessSlider" min="30" max="180" value="100" />
+                </div>
+                <div class="control-group">
+                  <span class="control-label">Contrast</span>
+                  <input type="range" id="contrastSlider" min="40" max="200" value="100" />
+                </div>
+              </div>
+            </div>
+
+            <!-- TEXT-ONLY CONTROLS -->
+            <div id="textSpecificControls" style="display: none; flex-direction: column; gap: 10px;">
+              <div class="divider"></div>
+              <div class="section-header">
+                <span>Typography Settings</span>
+              </div>
+              <div class="control-group">
+                <label class="control-label">Text Content</label>
+                <input type="text" id="textContentInput" class="text-input" value="STUDIO ARCHIVE" />
+              </div>
+              <div class="control-group">
+                <label class="control-label">Font Family</label>
+                <select id="textFontSelect" class="select-input">
+                  <option value="Inter, sans-serif">Heavy Sans (Streetwear)</option>
+                  <option value="Impact, Haettenschweiler, sans-serif">Condensed Block (Varsity)</option>
+                  <option value="Georgia, serif">Atelier Luxury Serif</option>
+                  <option value="monospace">Industrial Tech Mono</option>
+                </select>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div class="color-picker-row">
+                  <div class="color-input-wrapper">
+                    <input type="color" id="textColorPicker" value="#ffffff" />
+                  </div>
+                  <span style="font-size: 11px;">Fill</span>
+                </div>
+                <div class="color-picker-row">
+                  <div class="color-input-wrapper">
+                    <input type="color" id="textStrokeColorPicker" value="#000000" />
+                  </div>
+                  <span style="font-size: 11px;">Outline</span>
+                </div>
+              </div>
+              <div class="control-group">
+                <div class="control-label">
+                  <span>Varsity Arch / Curve</span>
+                  <span class="control-value" id="textCurveVal">0°</span>
+                </div>
+                <input type="range" id="textCurveSlider" min="-100" max="100" value="0" />
+              </div>
+              <div class="control-group">
+                <span class="control-label">Outline Stroke Width</span>
+                <input type="range" id="textStrokeSlider" min="0" max="16" value="0" />
+              </div>
+            </div>
+
+            <button class="btn btn-danger" id="deleteLayerBtn" style="width: 100%; margin-top: 4px;">
+              Remove Selected Layer
+            </button>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Tech Pack Presentation Modal -->
+  <div class="modal-backdrop" id="techPackModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span>FRONT + BACK PRODUCTION TECH PACK SHEET</span>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-primary btn-sm" id="downloadTechPackBtn">
+            ↓ Download Tech Pack PNG
+          </button>
+          <button class="btn btn-sm" id="closeTechPackBtn">✕ Close</button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <canvas id="techPackCanvas" width="2200" height="1360"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Status Indicator -->
+  <div id="studioToast" class="toast">Ready</div>
+
+  <script src="garments.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
