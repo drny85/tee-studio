@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TEE STUDIO // Local Apparel & Graphic Mockup Lab</title>
+  <title>TEE STUDIO // Local Apparel & Acid-Wash Graphic Lab</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -27,7 +27,7 @@
         type="text"
         id="projectNameInput"
         class="project-name-input"
-        value="Untitled Heavy Tee"
+        value="Good Luck Acid Tee"
         aria-label="Project Name"
       />
       <button class="btn btn-sm" id="saveLibraryBtn" title="Save to browser Local Library">
@@ -88,7 +88,7 @@
           </div>
 
           <button class="btn" id="addTextLayerBtn" style="width: 100%;">
-            Aa Add Streetwear Typography Layer
+            Aa Add Arched Streetwear Text
           </button>
         </div>
 
@@ -110,7 +110,7 @@
             <span>Built-In Streetwear Graphics</span>
           </div>
           <p style="font-size: 11.5px; color: var(--text-muted);">
-            Click any graphic below to stamp it onto the current shirt view. All graphics are generated locally.
+            Click any graphic below to stamp it onto the current shirt view. Includes the "Good Luck UFO Beam" vintage graphic!
           </p>
           <div id="presetGrid" class="preset-grid"></div>
         </div>
@@ -132,18 +132,18 @@
 
           <div class="control-group">
             <label class="control-label">Brand Name (Line 1)</label>
-            <input type="text" id="neckTagTextInput" class="text-input" value="STUDIO ARCHIVE" maxlength="18" />
+            <input type="text" id="neckTagTextInput" class="text-input" value="GOOD LUCK DEPT." maxlength="18" />
           </div>
 
           <div class="control-group">
             <label class="control-label">Size / Origin (Line 2)</label>
-            <input type="text" id="neckTagSubInput" class="text-input" value="HEAVYWEIGHT • L" maxlength="20" />
+            <input type="text" id="neckTagSubInput" class="text-input" value="MINERAL WASH • XL" maxlength="20" />
           </div>
 
           <div class="toggle-row">
             <span>Dark Woven Tag Style</span>
             <label class="switch">
-              <input type="checkbox" id="neckTagDarkToggle" />
+              <input type="checkbox" id="neckTagDarkToggle" checked />
               <span class="slider"></span>
             </label>
           </div>
@@ -156,7 +156,7 @@
             <span>Print Area & Guides</span>
           </div>
           <div class="toggle-row">
-            <span>Show 16"×20" Platen Guide</span>
+            <span>Show Platen Safe Guide</span>
             <label class="switch">
               <input type="checkbox" id="showGuidesToggle" />
               <span class="slider"></span>
@@ -184,7 +184,7 @@
     </aside>
 
     <!-- CENTER STAGE: Interactive High-DPI Shirt Viewport -->
-    <section class="stage-container backdrop-dark" id="stageContainer">
+    <section class="stage-container backdrop-concrete" id="stageContainer">
       <!-- Top Floating View Switcher -->
       <div class="stage-top-bar">
         <div class="segmented-pill">
@@ -198,18 +198,18 @@
         <canvas id="studioCanvas" width="1000" height="1120"></canvas>
       </div>
 
-      <!-- Bottom Floating Stage Bar (Backdrop Selector + Hints) -->
+      <!-- Bottom Floating Stage Bar -->
       <div class="stage-bottom-bar">
         <span style="font-size: 11px; color: var(--text-secondary); margin-right: 4px;">Backdrop:</span>
-        <button class="btn btn-sm" data-backdrop="dark">Studio Dark</button>
         <button class="btn btn-sm" data-backdrop="concrete">Concrete</button>
+        <button class="btn btn-sm" data-backdrop="dark">Studio Dark</button>
         <button class="btn btn-sm" data-backdrop="light">Daylight</button>
         <button class="btn btn-sm" data-backdrop="grid">Tech Grid</button>
         <button class="btn btn-sm" data-backdrop="transparent">Transparent PNG</button>
       </div>
     </section>
 
-    <!-- RIGHT SIDEBAR: Garment Silhouette, Color Dye Studio, Fabric Wash & Active Graphic Inspector -->
+    <!-- RIGHT SIDEBAR: Garment Silhouette, Acid/Mineral Wash Studio & Active Graphic Inspector -->
     <aside class="sidebar sidebar-right">
       <div class="panel-scroll">
         <!-- 1. GARMENT SILHOUETTE -->
@@ -218,13 +218,17 @@
             <span>1. Garment Silhouette</span>
           </div>
           <div class="garment-grid">
+            <button class="garment-btn active" data-garment="acid-oversized" style="grid-column: span 3; flex-direction: row; justify-content: center; padding: 9px;">
+              <span>⚡</span>
+              <span>Vintage Acid Oversized (Curved Hem)</span>
+            </button>
+            <button class="garment-btn" data-garment="boxy-tee">
+              <span>🧥</span>
+              <span>Boxy Heavy</span>
+            </button>
             <button class="garment-btn" data-garment="classic-tee">
               <span>👕</span>
               <span>Classic Crew</span>
-            </button>
-            <button class="garment-btn active" data-garment="boxy-tee">
-              <span>🧥</span>
-              <span>Boxy Heavy</span>
             </button>
             <button class="garment-btn" data-garment="ringer-tee">
               <span>🎽</span>
@@ -247,20 +251,68 @@
 
         <div class="divider"></div>
 
-        <!-- 2. GARMENT COLOR & DYE -->
+        <!-- 2. GARMENT COLOR, ACID WASH & SEAM ABRASION -->
         <div class="section">
           <div class="section-header">
-            <span>2. Garment Color & Dye</span>
+            <span>2. Dye Color & Acid Wash</span>
           </div>
 
           <div id="swatchGrid" class="swatch-grid"></div>
 
           <div class="color-picker-row">
             <div class="color-input-wrapper">
-              <input type="color" id="bodyColorPicker" value="#141416" />
+              <input type="color" id="bodyColorPicker" value="#1b1c1f" />
             </div>
-            <span style="flex: 1; font-size: 12px; font-weight: 500;">Custom Body Color</span>
-            <input type="text" id="bodyHexInput" class="hex-input" value="#141416" maxlength="7" />
+            <span style="flex: 1; font-size: 12px; font-weight: 500;">Base Dye Color</span>
+            <input type="text" id="bodyHexInput" class="hex-input" value="#1B1C1F" maxlength="7" />
+          </div>
+
+          <!-- Fabric Finish / Wash Type Selector -->
+          <div class="control-group" style="margin-top: 2px;">
+            <label class="control-label">Fabric Wash Treatment</label>
+            <select id="washModeSelect" class="select-input">
+              <option value="acid-wash">⚡ Heavy Mineral / Snow Acid Wash</option>
+              <option value="enzyme-fade">☀️ Vintage Sun / Enzyme Wash</option>
+              <option value="heather">🧶 Heathered Melange Jersey</option>
+              <option value="solid">✨ Clean Combed Cotton (Solid)</option>
+            </select>
+          </div>
+
+          <!-- Acid Cloud Pattern Scale -->
+          <div class="control-group" id="acidScaleRow" style="display: flex;">
+            <span class="control-label">Mineral Cloud Grain Scale</span>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
+              <button class="garment-btn" data-wash-scale="fine" style="padding: 5px;">Fine Pumice</button>
+              <button class="garment-btn active" data-wash-scale="medium" style="padding: 5px;">Stone Cloud</button>
+              <button class="garment-btn" data-wash-scale="bold" style="padding: 5px;">Heavy Marble</button>
+            </div>
+          </div>
+
+          <!-- Acid / Vintage Wash Intensity -->
+          <div class="control-group">
+            <div class="control-label">
+              <span>Acid / Mineral Wash Contrast</span>
+              <span class="control-value" id="vintageWashVal">78%</span>
+            </div>
+            <input type="range" id="vintageWashSlider" min="0" max="100" value="78" />
+          </div>
+
+          <!-- Stone-Washed Seam Abrasion (Collar, Shoulders, Curved Hem) -->
+          <div class="control-group">
+            <div class="control-label">
+              <span>Stone-Washed Seam Abrasion</span>
+              <span class="control-value" id="seamAbrasionVal">82%</span>
+            </div>
+            <input type="range" id="seamAbrasionSlider" min="0" max="100" value="82" />
+          </div>
+
+          <!-- 3D Drape & Cotton Weave -->
+          <div class="control-group">
+            <div class="control-label">
+              <span>3D Drape & Cotton Weave</span>
+              <span class="control-value" id="fabricTextureVal">70%</span>
+            </div>
+            <input type="range" id="fabricTextureSlider" min="0" max="100" value="70" />
           </div>
 
           <!-- Optional Contrast Sleeves / Collar -->
@@ -273,7 +325,7 @@
           </div>
           <div class="color-picker-row" id="sleeveColorRow" style="display: none;">
             <div class="color-input-wrapper">
-              <input type="color" id="sleeveColorPicker" value="#141416" />
+              <input type="color" id="sleeveColorPicker" value="#1b1c1f" />
             </div>
             <span style="flex: 1; font-size: 12px;">Sleeves Contrast Color</span>
           </div>
@@ -291,23 +343,6 @@
             </div>
             <span style="flex: 1; font-size: 12px;">Collar / Ribbing Color</span>
           </div>
-
-          <!-- Fabric Texture & Vintage Wash -->
-          <div class="control-group" style="margin-top: 4px;">
-            <div class="control-label">
-              <span>3D Wrinkle & Cotton Weave</span>
-              <span class="control-value" id="fabricTextureVal">65%</span>
-            </div>
-            <input type="range" id="fabricTextureSlider" min="0" max="100" value="65" />
-          </div>
-
-          <div class="control-group">
-            <div class="control-label">
-              <span>Vintage Pigment / Acid Wash</span>
-              <span class="control-value" id="vintageWashVal">12%</span>
-            </div>
-            <input type="range" id="vintageWashSlider" min="0" max="100" value="12" />
-          </div>
         </div>
 
         <div class="divider"></div>
@@ -319,7 +354,7 @@
           </div>
 
           <div id="noLayerSelectedNotice" class="empty-box" style="display: none;">
-            Click a graphic on the shirt (or upload a PNG) to resize, position, remove background, or blend into the fabric.
+            Click a graphic on the shirt (or upload a PNG) to resize, position, remove background, or blend into the acid-wash fabric.
           </div>
 
           <div id="activeLayerControls" style="display: flex; flex-direction: column; gap: 12px;">
@@ -327,8 +362,8 @@
             <div class="control-group">
               <span class="control-label">Quick Placement Snap</span>
               <div class="placement-grid">
+                <button class="placement-btn" data-preset="oversizedFront">Jumbo Full</button>
                 <button class="placement-btn" data-preset="centerChest">Center Chest</button>
-                <button class="placement-btn" data-preset="oversizedFront">Oversized</button>
                 <button class="placement-btn" data-preset="leftPocket">Left Pocket</button>
                 <button class="placement-btn" data-preset="rightChest">Right Chest</button>
                 <button class="placement-btn" data-preset="backYoke">Neck Yoke</button>
@@ -342,7 +377,7 @@
                 <span>Graphic Size (Scale)</span>
                 <span class="control-value" id="layerScaleVal">100%</span>
               </div>
-              <input type="range" id="layerScaleSlider" min="10" max="220" value="100" />
+              <input type="range" id="layerScaleSlider" min="10" max="240" value="100" />
             </div>
 
             <div class="control-group">
@@ -365,8 +400,8 @@
               <label class="control-label">Fabric Ink Blend Mode</label>
               <select id="layerBlendSelect" class="select-input">
                 <option value="source-over">Plastisol Ink (Standard Crisp)</option>
+                <option value="screen">Discharge Print (Screen — Best on Acid Black)</option>
                 <option value="multiply">Water-Based Dye (Multiply on Light Tees)</option>
-                <option value="screen">Discharge Print (Screen on Dark Tees)</option>
                 <option value="overlay">Soft Vintage Blend (Overlay)</option>
                 <option value="difference">Invert / Acid Contrast</option>
               </select>
@@ -387,9 +422,18 @@
                 <span>PNG Studio Tools</span>
               </div>
 
-              <!-- Local 1-Click Background Remover -->
+              <!-- 1-Click Black / White Background Knockouts -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                <button class="btn btn-sm" id="knockoutBlackBtn" title="Remove black background so acid-wash fabric shows through">
+                  ⚡ Knockout Black BG
+                </button>
+                <button class="btn btn-sm" id="knockoutWhiteBtn" title="Remove white background">
+                  ◯ Knockout White BG
+                </button>
+              </div>
+
               <div class="toggle-row">
-                <span style="font-size: 12px; font-weight: 500;">Knockout Solid Background</span>
+                <span style="font-size: 12px; font-weight: 500;">Custom Background Knockout</span>
                 <label class="switch">
                   <input type="checkbox" id="removeBgToggle" />
                   <span class="slider"></span>
@@ -399,7 +443,7 @@
               <div id="bgKnockoutSubControls" style="display: none; flex-direction: column; gap: 8px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 6px;">
                 <div class="color-picker-row">
                   <div class="color-input-wrapper">
-                    <input type="color" id="bgKeyColorPicker" value="#ffffff" />
+                    <input type="color" id="bgKeyColorPicker" value="#000000" />
                   </div>
                   <span style="font-size: 11.5px;">Key Color to Remove</span>
                 </div>
@@ -456,14 +500,14 @@
               </div>
               <div class="control-group">
                 <label class="control-label">Text Content</label>
-                <input type="text" id="textContentInput" class="text-input" value="STUDIO ARCHIVE" />
+                <input type="text" id="textContentInput" class="text-input" value="Good Luck" />
               </div>
               <div class="control-group">
                 <label class="control-label">Font Family</label>
                 <select id="textFontSelect" class="select-input">
+                  <option value="Georgia, 'Times New Roman', serif">Gothic Vintage Serif ("Good Luck")</option>
                   <option value="Inter, sans-serif">Heavy Sans (Streetwear)</option>
                   <option value="Impact, Haettenschweiler, sans-serif">Condensed Block (Varsity)</option>
-                  <option value="Georgia, serif">Atelier Luxury Serif</option>
                   <option value="monospace">Industrial Tech Mono</option>
                 </select>
               </div>

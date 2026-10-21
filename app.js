@@ -1,37 +1,43 @@
 // ============================================================================
 // TEE STUDIO — INTERACTIVE APPAREL DESIGN ENGINE (100% LOCAL)
+// With Heavy Mineral / Acid Wash, Seam Abrasion & Multi-Layer PNG Studio
 // ============================================================================
 
 (function () {
   const CANVAS_W = 1000;
   const CANVAS_H = 1120;
   const STORAGE_KEY = "tee_studio_saved_designs_v1";
-  const AUTOSAVE_KEY = "tee_studio_autosave_v1";
+  const AUTOSAVE_KEY = "tee_studio_autosave_v2";
 
   // Application State
   const state = {
-    projectName: "Untitled Heavy Tee",
-    garmentStyle: "boxy-tee", // classic-tee | boxy-tee | ringer-tee | longsleeve | hoodie | tank
-    activeView: "front",      // front | back
-    backdrop: "dark",         // dark | light | concrete | grid | transparent
+    projectName: "Good Luck Acid Tee",
+    garmentStyle: "acid-oversized", // acid-oversized | boxy-tee | classic-tee | ringer-tee | longsleeve | hoodie | tank
+    activeView: "front",            // front | back
+    backdrop: "concrete",           // dark | light | concrete | grid | transparent
 
-    // Garment Colors & Fabric
-    bodyColor: "#141416",
+    // Garment Colors & Acid/Mineral Wash Fabric Settings
+    bodyColor: "#1b1c1f",
     syncSleeves: true,
-    sleeveColor: "#141416",
+    sleeveColor: "#1b1c1f",
     syncCollar: true,
-    collarColor: "#f8fafc",
-    vintageWash: 12,          // 0 - 100 acid/vintage fade
-    fabricTexture: 65,        // 0 - 100 cotton weave & wrinkle depth
+    collarColor: "#1b1c1f",
+
+    washMode: "acid-wash",          // acid-wash | enzyme-fade | heather | solid
+    washScale: "medium",            // fine | medium | bold
+    vintageWash: 78,                // 0 - 100 mineral/acid cloud intensity
+    seamAbrasion: 82,               // 0 - 100 stone-washed chalky seam wear
+    fabricTexture: 70,              // 0 - 100 3D drape & cotton weave depth
+
     showPrintGuides: false,
     clipToShirt: true,
     clipToPrintBox: false,
 
     // Neck Tag (visible on Front inside collar)
     neckTagEnabled: true,
-    neckTagText: "STUDIO ARCHIVE",
-    neckTagSub: "HEAVYWEIGHT • L",
-    neckTagDark: false,
+    neckTagText: "GOOD LUCK DEPT.",
+    neckTagSub: "MINERAL WASH • XL",
+    neckTagDark: true,
 
     // Layers separated by view
     layers: {
@@ -39,24 +45,21 @@
       back: []
     },
     selectedLayerId: null,
-
-    // Viewport Zoom
-    zoom: 1,
-
-    // History for Undo
     history: []
   };
 
-  // Runtime caches for loaded HTMLImageElement / processed canvases
-  const imageCache = new Map();       // layer.id -> HTMLImageElement
-  const processedCache = new Map();   // layer.id + filterHash -> HTMLCanvasElement
+  // Runtime caches
+  const imageCache = new Map();
+  const processedCache = new Map();
+  const acidWashCache = new Map(); // scaleMode -> HTMLCanvasElement
+  const wrinkleShadingCache = new Map();
   let fabricPatternCanvas = null;
-  let wrinkleShadingCache = new Map(); // styleId+view -> HTMLCanvasElement
+  let heatherPatternCanvas = null;
   let starterGraphics = [];
 
   // Pointer interaction state
   let interaction = {
-    mode: null, // 'move' | 'scale' | 'rotate'
+    mode: null,
     startX: 0,
     startY: 0,
     initialLayerX: 0,
@@ -64,12 +67,10 @@
     initialScale: 1,
     initialRotation: 0,
     initialDist: 1,
-    initialAngle: 0,
     snapX: false,
     snapY: false
   };
 
-  // DOM References
   const canvas = document.getElementById("studioCanvas");
   const ctx = canvas.getContext("2d");
 
@@ -81,6 +82,7 @@
     canvas.height = CANVAS_H;
 
     buildFabricWeavePattern();
+    buildHeatherPattern();
     starterGraphics = window.generateStarterGraphics();
 
     renderSwatches();
@@ -89,10 +91,17 @@
     bindCanvasEvents();
     bindKeyboardShortcuts();
 
-    // Try restoring autosave, otherwise load a crisp default design
     if (!loadAutosave()) {
-      addImageLayerFromDataUrl(starterGraphics[0].dataUrl, starterGraphics[0].name);
+      // Load the "Good Luck UFO Beam" graphic on the Acid-Washed Oversized Tee by default
+      addImageLayerFromDataUrl(starterGraphics[0].dataUrl, starterGraphics[0].name, {
+        y: 525,
+        scale: 1.18,
+        distress: 18
+      });
     }
+
+    const stage = document.getElementById("stageContainer");
+    if (stage) stage.className = `stage-container backdrop-${state.backdrop}`;
 
     renderSavedDesignsList();
     syncUIFromState();
@@ -100,7 +109,7 @@
   }
 
   // --------------------------------------------------------------------------
-  // PROCEDURAL FABRIC WEAVE & 3D WRINKLE SHADING MAPS
+  // PROCEDURAL FABRIC WEAVE, HEATHER, ACID WASH & 3D WRINKLE MAPS
   // --------------------------------------------------------------------------
   function buildFabricWeavePattern() {
     const pCanvas = document.createElement("canvas");
@@ -113,18 +122,49 @@
     for (let y = 0; y < 64; y++) {
       for (let x = 0; x < 64; x++) {
         const idx = (y * 64 + x) * 4;
-        // Cotton jersey knit diagonal micro-grain
-        const knit = ((x + y * 2) % 4 === 0) ? 255 : 0;
+        const knit = (x + y * 2) % 4 === 0 ? 255 : 0;
         const noise = (Math.sin(x * 12.9898 + y * 78.233) * 43758.5453) % 1;
         const val = knit * 0.4 + Math.abs(noise) * 155;
         data[idx] = val;
         data[idx + 1] = val;
         data[idx + 2] = val;
-        data[idx + 3] = 22;
+        data[idx + 3] = 24;
       }
     }
     pCtx.putImageData(imgData, 0, 0);
     fabricPatternCanvas = pCanvas;
+  }
+
+  function buildHeatherPattern() {
+    const hCanvas = document.createElement("canvas");
+    hCanvas.width = 96;
+    hCanvas.height = 96;
+    const hCtx = hCanvas.getContext("2d");
+    const imgData = hCtx.createImageData(96, 96);
+    const d = imgData.data;
+    for (let y = 0; y < 96; y++) {
+      for (let x = 0; x < 96; x++) {
+        const i = (y * 96 + x) * 4;
+        // Horizontal slub melange streaks
+        const n1 = Math.abs((Math.sin((x * 0.35 + y * 3.1) * 19.19) * 43758.54) % 1);
+        const n2 = Math.abs((Math.cos(x * 11.3 + y * 7.7) * 19283.12) % 1);
+        const v = n1 > 0.58 ? 235 : n2 < 0.35 ? 25 : 128;
+        d[i] = v;
+        d[i + 1] = v;
+        d[i + 2] = v;
+        d[i + 3] = 55;
+      }
+    }
+    hCtx.putImageData(imgData, 0, 0);
+    heatherPatternCanvas = hCanvas;
+  }
+
+  function getAcidWashMap(scaleMode) {
+    const mode = scaleMode || "medium";
+    if (!acidWashCache.has(mode)) {
+      acidWashCache.set(mode, window.generateAcidWashTexture(CANVAS_W, CANVAS_H, mode));
+    }
+    return acidWashCache.get(mode);
   }
 
   function getWrinkleMap(styleId, view) {
@@ -139,14 +179,14 @@
     const wCtx = wCanvas.getContext("2d");
 
     // Cylindrical torso 3D studio lighting
-    const bodyGrad = wCtx.createLinearGradient(230, 0, 770, 0);
-    bodyGrad.addColorStop(0, "rgba(0, 0, 0, 0.34)");
+    const bodyGrad = wCtx.createLinearGradient(220, 0, 780, 0);
+    bodyGrad.addColorStop(0, "rgba(0, 0, 0, 0.36)");
     bodyGrad.addColorStop(0.14, "rgba(0, 0, 0, 0.06)");
     bodyGrad.addColorStop(0.32, "rgba(255, 255, 255, 0.07)");
     bodyGrad.addColorStop(0.5, "rgba(0, 0, 0, 0.02)");
     bodyGrad.addColorStop(0.68, "rgba(255, 255, 255, 0.06)");
     bodyGrad.addColorStop(0.86, "rgba(0, 0, 0, 0.07)");
-    bodyGrad.addColorStop(1, "rgba(0, 0, 0, 0.36)");
+    bodyGrad.addColorStop(1, "rgba(0, 0, 0, 0.38)");
 
     wCtx.fillStyle = bodyGrad;
     wCtx.fillRect(0, 0, CANVAS_W, CANVAS_H);
@@ -156,20 +196,20 @@
     vertGrad.addColorStop(0, "rgba(255, 255, 255, 0.12)");
     vertGrad.addColorStop(0.18, "rgba(255, 255, 255, 0.02)");
     vertGrad.addColorStop(0.82, "rgba(0, 0, 0, 0.04)");
-    vertGrad.addColorStop(1, "rgba(0, 0, 0, 0.24)");
+    vertGrad.addColorStop(1, "rgba(0, 0, 0, 0.26)");
     wCtx.fillStyle = vertGrad;
     wCtx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
-    // Soft realistic drape folds radiating from armpits and chest
+    // Realistic drape folds radiating from shoulders, chest, and hem
     const folds = [
-      { x1: 270, y1: 340, x2: 375, y2: 560, r: 48, a: 0.14 },
-      { x1: 268, y1: 365, x2: 340, y2: 720, r: 55, a: 0.11 },
-      { x1: 730, y1: 340, x2: 625, y2: 560, r: 48, a: 0.14 },
-      { x1: 732, y1: 365, x2: 660, y2: 720, r: 55, a: 0.11 },
-      { x1: 440, y1: 230, x2: 420, y2: 890, r: 75, a: 0.06 },
-      { x1: 565, y1: 240, x2: 585, y2: 890, r: 75, a: 0.06 },
-      { x1: 180, y1: 280, x2: 265, y2: 355, r: 36, a: 0.16 },
-      { x1: 820, y1: 280, x2: 735, y2: 355, r: 36, a: 0.16 }
+      { x1: 255, y1: 340, x2: 375, y2: 560, r: 48, a: 0.16 },
+      { x1: 250, y1: 365, x2: 335, y2: 750, r: 55, a: 0.13 },
+      { x1: 745, y1: 340, x2: 625, y2: 560, r: 48, a: 0.16 },
+      { x1: 750, y1: 365, x2: 665, y2: 750, r: 55, a: 0.13 },
+      { x1: 430, y1: 230, x2: 410, y2: 890, r: 72, a: 0.07 },
+      { x1: 570, y1: 240, x2: 590, y2: 890, r: 72, a: 0.07 },
+      { x1: 150, y1: 310, x2: 250, y2: 400, r: 38, a: 0.18 },
+      { x1: 850, y1: 310, x2: 750, y2: 400, r: 38, a: 0.18 }
     ];
 
     folds.forEach((f) => {
@@ -183,7 +223,6 @@
       wCtx.lineTo(f.x2, f.y2);
       wCtx.stroke();
 
-      // Adjacent fold ridge highlight
       wCtx.strokeStyle = `rgba(255, 255, 255, ${f.a * 0.45})`;
       wCtx.lineWidth = f.r * 0.45;
       wCtx.beginPath();
@@ -239,16 +278,16 @@
 
     // 1. Ambient Drop Shadow behind garment
     targetCtx.save();
-    targetCtx.shadowColor = "rgba(0, 0, 0, 0.48)";
-    targetCtx.shadowBlur = 42;
-    targetCtx.shadowOffsetY = 18;
+    targetCtx.shadowColor = "rgba(0, 0, 0, 0.52)";
+    targetCtx.shadowBlur = 44;
+    targetCtx.shadowOffsetY = 20;
     targetCtx.fillStyle = state.bodyColor;
     targetCtx.fill(paths.fullSilhouette);
     targetCtx.restore();
 
-    // 2. Inner Back-of-Neck Area (darker shade of body color)
+    // 2. Inner Back-of-Neck Area
     targetCtx.save();
-    targetCtx.fillStyle = shadeHexColor(state.bodyColor, -28);
+    targetCtx.fillStyle = shadeHexColor(state.bodyColor, -26);
     targetCtx.fill(paths.innerNeck);
     targetCtx.restore();
 
@@ -256,28 +295,28 @@
     if (viewName === "front" && state.neckTagEnabled) {
       targetCtx.save();
       targetCtx.clip(paths.innerNeck);
-      const tagW = 104;
+      const tagW = 108;
       const tagH = 48;
       const tagX = 500 - tagW / 2;
-      const tagY = 152;
+      const tagY = 148;
 
       targetCtx.fillStyle = state.neckTagDark ? "#18181b" : "#f5f5f4";
-      targetCtx.shadowColor = "rgba(0,0,0,0.35)";
+      targetCtx.shadowColor = "rgba(0,0,0,0.4)";
       targetCtx.shadowBlur = 6;
       targetCtx.fillRect(tagX, tagY, tagW, tagH);
 
       targetCtx.fillStyle = state.neckTagDark ? "#f4f4f5" : "#18181b";
-      targetCtx.font = "800 10px Inter, sans-serif";
+      targetCtx.font = "800 9.5px Inter, sans-serif";
       targetCtx.textAlign = "center";
       targetCtx.fillText((state.neckTagText || "STUDIO").slice(0, 18), 500, tagY + 21);
 
       targetCtx.font = "600 7.5px monospace";
       targetCtx.fillStyle = state.neckTagDark ? "#a1a1aa" : "#52525b";
-      targetCtx.fillText((state.neckTagSub || "HEAVY • L").slice(0, 20), 500, tagY + 34);
+      targetCtx.fillText((state.neckTagSub || "HEAVY • XL").slice(0, 20), 500, tagY + 34);
       targetCtx.restore();
     }
 
-    // 4. Fill Garment Parts (Hood/Detail, Sleeves, Torso, Collar & Cuffs)
+    // 4. Fill Base Garment Parts
     targetCtx.save();
     targetCtx.fillStyle = shadeHexColor(state.bodyColor, -8);
     targetCtx.fill(paths.extraDetail);
@@ -294,18 +333,90 @@
     targetCtx.fill(paths.sleeveTrim);
     targetCtx.restore();
 
-    // 5. Vintage / Acid Wash Fade Effect
-    if (state.vintageWash > 0) {
+    // 5. FABRIC WASH & MINERAL / ACID TEXTURE PASS (Applied directly to garment fabric)
+    const washStrength = state.vintageWash / 100;
+    if (state.washMode === "acid-wash" && washStrength > 0) {
+      const acidCanvas = getAcidWashMap(state.washScale);
       targetCtx.save();
       targetCtx.clip(paths.fullSilhouette);
-      const washAlpha = (state.vintageWash / 100) * 0.38;
-      const radGrad = targetCtx.createRadialGradient(500, 480, 60, 500, 480, 480);
+
+      // Screen/Lighten pass creates the smoky frosted grey mineral clouds over dark dye
+      targetCtx.globalAlpha = washStrength * 0.58;
+      targetCtx.globalCompositeOperation = "screen";
+      targetCtx.drawImage(acidCanvas, 0, 0);
+
+      // Soft-light pass deepens the dark charcoal valleys between mineral clouds
+      targetCtx.globalAlpha = Math.min(1, washStrength * 0.85);
+      targetCtx.globalCompositeOperation = "overlay";
+      targetCtx.drawImage(acidCanvas, 0, 0);
+
+      // Vignette darkening around outer edges for authentic garment dye depth
+      const edgeGrad = targetCtx.createRadialGradient(500, 500, 180, 500, 500, 520);
+      edgeGrad.addColorStop(0, "rgba(255,255,255,0.06)");
+      edgeGrad.addColorStop(1, "rgba(0,0,0,0.38)");
+      targetCtx.globalAlpha = washStrength * 0.65;
+      targetCtx.globalCompositeOperation = "multiply";
+      targetCtx.fillStyle = edgeGrad;
+      targetCtx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+      targetCtx.restore();
+    } else if (state.washMode === "enzyme-fade" && washStrength > 0) {
+      targetCtx.save();
+      targetCtx.clip(paths.fullSilhouette);
+      const washAlpha = washStrength * 0.44;
+      const radGrad = targetCtx.createRadialGradient(500, 470, 50, 500, 470, 470);
       radGrad.addColorStop(0, `rgba(255, 255, 255, ${washAlpha})`);
       radGrad.addColorStop(0.65, `rgba(210, 210, 220, ${washAlpha * 0.45})`);
-      radGrad.addColorStop(1, "rgba(0, 0, 0, 0.15)");
+      radGrad.addColorStop(1, "rgba(0, 0, 0, 0.2)");
       targetCtx.globalCompositeOperation = "screen";
       targetCtx.fillStyle = radGrad;
       targetCtx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+      targetCtx.restore();
+    } else if (state.washMode === "heather" && heatherPatternCanvas) {
+      targetCtx.save();
+      targetCtx.clip(paths.fullSilhouette);
+      targetCtx.globalAlpha = Math.max(0.25, washStrength * 0.85);
+      targetCtx.globalCompositeOperation = "overlay";
+      const hPat = targetCtx.createPattern(heatherPatternCanvas, "repeat");
+      targetCtx.fillStyle = hPat;
+      targetCtx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+      targetCtx.restore();
+    }
+
+    // 5B. STONE-WASHED SEAM ABRASION & COLLAR RIB RIDGES (Matches Reference Photo!)
+    const abrasionStrength = state.seamAbrasion / 100;
+    if (abrasionStrength > 0 && paths.abrasionSeams) {
+      targetCtx.save();
+      targetCtx.clip(paths.fullSilhouette);
+
+      // Chalky frosted highlight along raised seams (collar, shoulders, cuffs, curved hem)
+      targetCtx.globalCompositeOperation = "screen";
+      targetCtx.strokeStyle = `rgba(230, 232, 240, ${abrasionStrength * 0.34})`;
+      targetCtx.lineWidth = 10;
+      targetCtx.filter = "blur(3px)";
+      targetCtx.stroke(paths.abrasionSeams);
+
+      // Crisp irregular stone-washed ridge along stitch lines
+      targetCtx.filter = "none";
+      targetCtx.strokeStyle = `rgba(245, 245, 250, ${abrasionStrength * 0.28})`;
+      targetCtx.lineWidth = 3;
+      targetCtx.setLineDash([7, 3, 2, 4]);
+      targetCtx.stroke(paths.abrasionSeams);
+      targetCtx.setLineDash([]);
+
+      // Vertical ribbed knit texture lines along collar band
+      targetCtx.save();
+      targetCtx.clip(paths.collarTrim);
+      targetCtx.strokeStyle = `rgba(255, 255, 255, ${abrasionStrength * 0.26})`;
+      targetCtx.lineWidth = 2;
+      for (let rx = 365; rx <= 635; rx += 6) {
+        targetCtx.beginPath();
+        targetCtx.moveTo(rx, 130);
+        targetCtx.lineTo(rx + (rx - 500) * 0.08, 270);
+        targetCtx.stroke();
+      }
+      targetCtx.restore();
+
       targetCtx.restore();
     }
 
@@ -334,17 +445,14 @@
       targetCtx.save();
       targetCtx.clip(paths.fullSilhouette);
 
-      // Multiply pass for creases & shadows
       targetCtx.globalAlpha = wrinkleIntensity;
       targetCtx.globalCompositeOperation = "multiply";
       targetCtx.drawImage(wrinkleMap, 0, 0);
 
-      // Soft highlight pass for ridges
       targetCtx.globalAlpha = wrinkleIntensity * 0.55;
       targetCtx.globalCompositeOperation = "soft-light";
       targetCtx.drawImage(wrinkleMap, 0, 0);
 
-      // Cotton micro-weave pattern
       if (fabricPatternCanvas) {
         targetCtx.globalAlpha = wrinkleIntensity * 0.65;
         targetCtx.globalCompositeOperation = "overlay";
@@ -358,28 +466,28 @@
     // 8. Garment Seam Stitching & Collar Outline Definition
     targetCtx.save();
     targetCtx.clip(paths.fullSilhouette);
-    targetCtx.strokeStyle = "rgba(0, 0, 0, 0.28)";
+    targetCtx.strokeStyle = "rgba(0, 0, 0, 0.35)";
     targetCtx.lineWidth = 2;
     targetCtx.stroke(paths.collarTrim);
     targetCtx.stroke(paths.innerNeck);
 
     targetCtx.setLineDash([4, 4]);
     targetCtx.lineWidth = 1.5;
-    targetCtx.strokeStyle = "rgba(255, 255, 255, 0.14)";
+    targetCtx.strokeStyle = "rgba(255, 255, 255, 0.18)";
     targetCtx.stroke(paths.seamLines);
     targetCtx.setLineDash([]);
-    targetCtx.strokeStyle = "rgba(0, 0, 0, 0.22)";
+    targetCtx.strokeStyle = "rgba(0, 0, 0, 0.25)";
     targetCtx.stroke(paths.seamLines);
     targetCtx.restore();
 
-    // Subtle crisp outer contour
+    // Outer contour
     targetCtx.save();
-    targetCtx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+    targetCtx.strokeStyle = "rgba(255, 255, 255, 0.1)";
     targetCtx.lineWidth = 1.5;
     targetCtx.stroke(paths.fullSilhouette);
     targetCtx.restore();
 
-    // 9. Optional Interactive Studio Overlays (Print Safe Zone, Snap Guides, Selection Gizmo)
+    // 9. Optional Interactive Studio Overlays
     if (includeGizmos) {
       if (state.showPrintGuides && spec) {
         targetCtx.save();
@@ -388,7 +496,6 @@
         targetCtx.setLineDash([6, 6]);
         targetCtx.strokeRect(spec.printBox.x, spec.printBox.y, spec.printBox.w, spec.printBox.h);
 
-        // Center chest crosshair
         targetCtx.strokeStyle = "rgba(99, 102, 241, 0.35)";
         targetCtx.beginPath();
         targetCtx.moveTo(500, spec.printBox.y);
@@ -397,11 +504,14 @@
 
         targetCtx.fillStyle = "rgba(99, 102, 241, 0.85)";
         targetCtx.font = "600 11px monospace";
-        targetCtx.fillText("PRINTABLE SAFE AREA (16\" × 20\")", spec.printBox.x + 8, spec.printBox.y - 8);
+        targetCtx.fillText(
+          "PRINTABLE SAFE AREA",
+          spec.printBox.x + 8,
+          spec.printBox.y - 8
+        );
         targetCtx.restore();
       }
 
-      // Magnetic Snap Lines while dragging
       if (interaction.mode === "move") {
         targetCtx.save();
         targetCtx.strokeStyle = "#10b981";
@@ -415,14 +525,13 @@
         }
         if (interaction.snapY) {
           targetCtx.beginPath();
-          targetCtx.moveTo(260, 410);
-          targetCtx.lineTo(740, 410);
+          targetCtx.moveTo(260, 420);
+          targetCtx.lineTo(740, 420);
           targetCtx.stroke();
         }
         targetCtx.restore();
       }
 
-      // Active Layer Transform Box & Handles
       const activeLayer = getActiveLayer();
       if (activeLayer && activeLayer.visible) {
         drawSelectionGizmo(targetCtx, activeLayer);
@@ -489,7 +598,6 @@
     off.height = nh;
     const oCtx = off.getContext("2d");
 
-    // Apply CSS filter for brightness / contrast / saturation
     const br = layer.brightness ?? 100;
     const ct = layer.contrast ?? 100;
     const st = layer.saturation ?? 100;
@@ -499,13 +607,13 @@
     oCtx.drawImage(img, 0, 0, nw, nh);
     oCtx.filter = "none";
 
-    // Optional Local Background Color Knockout (for non-transparent PNGs/JPGs)
+    // Local Background Color Knockout
     if (layer.removeBg) {
       const imgData = oCtx.getImageData(0, 0, nw, nh);
       const data = imgData.data;
-      const targetRGB = hexToRgb(layer.bgKeyColor || "#ffffff");
+      const targetRGB = hexToRgb(layer.bgKeyColor || "#000000");
       const tol = (layer.bgTolerance ?? 28) * 2.55;
-      const feather = Math.max(8, tol * 0.35);
+      const feather = Math.max(10, tol * 0.4);
 
       for (let i = 0; i < data.length; i += 4) {
         const dr = data[i] - targetRGB.r;
@@ -522,7 +630,6 @@
       oCtx.putImageData(imgData, 0, 0);
     }
 
-    // Optional Color Tint Override (recolors non-transparent pixels)
     if (layer.tintEnabled && layer.tintColor) {
       oCtx.save();
       oCtx.globalCompositeOperation = "source-atop";
@@ -531,15 +638,14 @@
       oCtx.restore();
     }
 
-    // Optional Vintage Distressed / Cracked Screenprint Ink Filter
+    // Vintage Distressed / Cracked Screenprint Ink Filter
     if ((layer.distress ?? 0) > 0) {
       oCtx.save();
       oCtx.globalCompositeOperation = "destination-out";
       const distressAmount = layer.distress / 100;
-      const speckles = Math.floor(nw * nh * 0.0025 * distressAmount);
+      const speckles = Math.floor(nw * nh * 0.0028 * distressAmount);
       oCtx.fillStyle = "#000";
       for (let i = 0; i < speckles; i++) {
-        // Deterministic pseudo-random distress cracks so it doesn't flicker
         const s1 = Math.sin(i * 12.9898) * 43758.5453;
         const s2 = Math.cos(i * 78.233) * 29183.1234;
         const rx = Math.abs(s1 - Math.floor(s1)) * nw;
@@ -557,9 +663,9 @@
 
   function drawTextLayerContent(targetCtx, layer) {
     const fontSize = layer.fontSize || 64;
-    const fontFamily = layer.fontFamily || "Inter, sans-serif";
+    const fontFamily = layer.fontFamily || "Georgia, serif";
     const fontWeight = layer.fontWeight || "900";
-    const text = (layer.text || "STUDIO").toUpperCase();
+    const text = layer.text || "Good Luck";
     const letterSpacing = layer.letterSpacing || 0;
 
     targetCtx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
@@ -567,7 +673,6 @@
     targetCtx.textBaseline = "middle";
 
     if (layer.curve && Math.abs(layer.curve) > 2) {
-      // Curved / Arched Streetwear Text
       const chars = text.split("");
       const radius = 520 - Math.abs(layer.curve) * 3.2;
       const isUp = layer.curve > 0;
@@ -592,7 +697,6 @@
       }
       targetCtx.restore();
     } else {
-      // Standard or tracked text
       if (layer.strokeWidth > 0) {
         targetCtx.lineWidth = layer.strokeWidth;
         targetCtx.strokeStyle = layer.strokeColor || "#000000";
@@ -610,7 +714,7 @@
     if (layer.type === "text") {
       ctx.save();
       ctx.font = `900 ${layer.fontSize || 64}px ${layer.fontFamily || "Inter"}`;
-      const m = ctx.measureText((layer.text || "STUDIO").toUpperCase());
+      const m = ctx.measureText(layer.text || "Good Luck");
       ctx.restore();
       const w = Math.max(120, m.width + 40);
       const h = (layer.fontSize || 64) * 1.4 + Math.abs(layer.curve || 0) * 1.2;
@@ -628,18 +732,15 @@
     targetCtx.translate(layer.x, layer.y);
     targetCtx.rotate((layer.rotation * Math.PI) / 180);
 
-    // Bounding Box
     targetCtx.strokeStyle = "#6366f1";
     targetCtx.lineWidth = 2;
     targetCtx.strokeRect(-sw / 2, -sh / 2, sw, sh);
 
-    // Rotation Stem
     targetCtx.beginPath();
     targetCtx.moveTo(0, -sh / 2);
     targetCtx.lineTo(0, -sh / 2 - 32);
     targetCtx.stroke();
 
-    // Rotation Handle Circle
     targetCtx.fillStyle = "#ffffff";
     targetCtx.strokeStyle = "#6366f1";
     targetCtx.lineWidth = 2.5;
@@ -648,7 +749,6 @@
     targetCtx.fill();
     targetCtx.stroke();
 
-    // 4 Corner Scale Handles
     const corners = [
       [-sw / 2, -sh / 2],
       [sw / 2, -sh / 2],
@@ -680,12 +780,10 @@
     const sh = h * layer.scale;
     const { lx, ly } = toLayerLocalCoords(px, py, layer);
 
-    // Check rotation handle
     if (Math.hypot(lx - 0, ly - (-sh / 2 - 32)) <= 16) {
       return "rotate";
     }
 
-    // Check 4 corner scale handles
     const corners = [
       [-sw / 2, -sh / 2],
       [sw / 2, -sh / 2],
@@ -698,7 +796,6 @@
       }
     }
 
-    // Check inside bounding box
     if (Math.abs(lx) <= sw / 2 && Math.abs(ly) <= sh / 2) {
       return "move";
     }
@@ -721,7 +818,6 @@
       const { x, y } = getCanvasCoords(e);
       const active = getActiveLayer();
 
-      // 1. Check active layer gizmo handles first
       if (active && active.visible) {
         const hit = hitTestGizmo(x, y, active);
         if (hit) {
@@ -730,7 +826,6 @@
         }
       }
 
-      // 2. Check top-most visible layer under cursor
       const viewLayers = state.layers[state.activeView];
       for (let i = viewLayers.length - 1; i >= 0; i--) {
         const l = viewLayers[i];
@@ -744,7 +839,6 @@
         }
       }
 
-      // Clicked outside all layers -> deselect
       state.selectedLayerId = null;
       syncUIFromState();
       requestRender();
@@ -754,7 +848,6 @@
       const { x, y } = getCanvasCoords(e);
 
       if (!interaction.mode) {
-        // Update cursor hover state
         const active = getActiveLayer();
         if (active && active.visible) {
           const hit = hitTestGizmo(x, y, active);
@@ -779,15 +872,14 @@
         let nx = interaction.initialLayerX + (x - interaction.startX);
         let ny = interaction.initialLayerY + (y - interaction.startY);
 
-        // Magnetic snap to vertical shirt center (x = 500) & chest line (y = 410)
         interaction.snapX = false;
         interaction.snapY = false;
         if (Math.abs(nx - 500) < 10) {
           nx = 500;
           interaction.snapX = true;
         }
-        if (Math.abs(ny - 410) < 10) {
-          ny = 410;
+        if (Math.abs(ny - 420) < 10) {
+          ny = 420;
           interaction.snapY = true;
         }
 
@@ -837,7 +929,7 @@
   }
 
   // --------------------------------------------------------------------------
-  // LAYER MANAGEMENT (PNG UPLOAD, PRESETS, TEXT, REORDER, DUPLICATE)
+  // LAYER MANAGEMENT
   // --------------------------------------------------------------------------
   function getActiveLayer() {
     const list = state.layers[state.activeView] || [];
@@ -858,32 +950,31 @@
     reader.readAsDataURL(file);
   }
 
-  function addImageLayerFromDataUrl(dataUrl, name = "Uploaded Graphic") {
+  function addImageLayerFromDataUrl(dataUrl, name = "Uploaded Graphic", overrides = {}) {
     pushUndoSnapshot();
     const img = new Image();
     img.onload = () => {
       const id = "layer_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
       imageCache.set(id, img);
 
-      // Fit graphic nicely inside chest area (~340px max dimension initially)
-      const maxDim = 360;
+      const maxDim = 420;
       const natW = img.naturalWidth || 400;
       const natH = img.naturalHeight || 400;
       const ratio = Math.min(maxDim / natW, maxDim / natH);
       const baseW = Math.round(natW * ratio);
       const baseH = Math.round(natH * ratio);
 
-      // Auto-sample top-left pixel color for optional 1-click background removal
       const sampleCanvas = document.createElement("canvas");
       sampleCanvas.width = 1;
       sampleCanvas.height = 1;
       const sCtx = sampleCanvas.getContext("2d");
       sCtx.drawImage(img, 0, 0, 1, 1, 0, 0, 1, 1);
       const px = sCtx.getImageData(0, 0, 1, 1).data;
-      const detectedBgHex = rgbToHex(px[0], px[1], px[2]);
+      const detectedBgHex = px[3] < 50 ? "#000000" : rgbToHex(px[0], px[1], px[2]);
 
       const spec = window.GARMENT_SPECS[state.garmentStyle];
-      const defaultY = state.activeView === "front" ? spec.presets.centerChest.y : spec.presets.fullBack.y;
+      const defaultY =
+        state.activeView === "front" ? spec.presets.centerChest.y : spec.presets.fullBack.y;
 
       const newLayer = {
         id,
@@ -892,9 +983,9 @@
         dataUrl,
         width: baseW,
         height: baseH,
-        x: 500,
-        y: defaultY,
-        scale: 1,
+        x: overrides.x ?? 500,
+        y: overrides.y ?? defaultY,
+        scale: overrides.scale ?? 1,
         rotation: 0,
         opacity: 1,
         blendMode: "source-over",
@@ -909,7 +1000,7 @@
         brightness: 100,
         contrast: 100,
         saturation: 100,
-        distress: 0
+        distress: overrides.distress ?? 0
       };
 
       state.layers[state.activeView].push(newLayer);
@@ -927,18 +1018,18 @@
     const newLayer = {
       id,
       type: "text",
-      name: "Typography Layer",
-      text: "STUDIO ARCHIVE",
-      fontFamily: "Inter, sans-serif",
-      fontSize: 56,
+      name: "Gothic Arch Text",
+      text: "Good Luck",
+      fontFamily: "Georgia, 'Times New Roman', serif",
+      fontSize: 72,
       fontWeight: "900",
-      color: "#ffffff",
-      strokeColor: "#000000",
-      strokeWidth: 0,
-      curve: 0,
-      letterSpacing: 2,
+      color: "#f4f4f6",
+      strokeColor: "#090a0d",
+      strokeWidth: 4,
+      curve: 42,
+      letterSpacing: 3,
       x: 500,
-      y: 360,
+      y: 340,
       scale: 1,
       rotation: 0,
       opacity: 1,
@@ -1024,7 +1115,7 @@
 
     layer.x = preset.x;
     layer.y = preset.y;
-    layer.scale = +(preset.scale * 1.4).toFixed(2);
+    layer.scale = +(preset.scale * 1.35).toFixed(2);
     layer.rotation = 0;
 
     saveAutosave();
@@ -1033,7 +1124,7 @@
   }
 
   // --------------------------------------------------------------------------
-  // UNDO & LOCAL PERSISTENCE (AUTOSAVE + SAVED DESIGNS LIBRARY)
+  // UNDO & LOCAL PERSISTENCE
   // --------------------------------------------------------------------------
   function pushUndoSnapshot() {
     const snap = JSON.stringify({
@@ -1043,7 +1134,10 @@
       sleeveColor: state.sleeveColor,
       syncCollar: state.syncCollar,
       collarColor: state.collarColor,
+      washMode: state.washMode,
+      washScale: state.washScale,
       vintageWash: state.vintageWash,
+      seamAbrasion: state.seamAbrasion,
       fabricTexture: state.fabricTexture,
       layers: state.layers
     });
@@ -1069,9 +1163,7 @@
     try {
       const payload = serializeProject();
       localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(payload));
-    } catch (e) {
-      // Ignore quota errors if huge raw images are loaded
-    }
+    } catch (e) {}
   }
 
   function loadAutosave() {
@@ -1088,7 +1180,7 @@
 
   function serializeProject() {
     return {
-      version: 1,
+      version: 2,
       savedAt: new Date().toISOString(),
       projectName: state.projectName,
       garmentStyle: state.garmentStyle,
@@ -1097,7 +1189,10 @@
       sleeveColor: state.sleeveColor,
       syncCollar: state.syncCollar,
       collarColor: state.collarColor,
+      washMode: state.washMode,
+      washScale: state.washScale,
       vintageWash: state.vintageWash,
+      seamAbrasion: state.seamAbrasion,
       fabricTexture: state.fabricTexture,
       neckTagEnabled: state.neckTagEnabled,
       neckTagText: state.neckTagText,
@@ -1109,18 +1204,21 @@
 
   function loadProjectObject(data) {
     state.projectName = data.projectName || "Untitled Tee";
-    state.garmentStyle = data.garmentStyle || "boxy-tee";
-    state.bodyColor = data.bodyColor || "#141416";
+    state.garmentStyle = data.garmentStyle || "acid-oversized";
+    state.bodyColor = data.bodyColor || "#1b1c1f";
     state.syncSleeves = data.syncSleeves ?? true;
     state.sleeveColor = data.sleeveColor || state.bodyColor;
     state.syncCollar = data.syncCollar ?? true;
     state.collarColor = data.collarColor || state.bodyColor;
-    state.vintageWash = data.vintageWash ?? 12;
-    state.fabricTexture = data.fabricTexture ?? 65;
+    state.washMode = data.washMode || "acid-wash";
+    state.washScale = data.washScale || "medium";
+    state.vintageWash = data.vintageWash ?? 78;
+    state.seamAbrasion = data.seamAbrasion ?? 82;
+    state.fabricTexture = data.fabricTexture ?? 70;
     state.neckTagEnabled = data.neckTagEnabled ?? true;
-    state.neckTagText = data.neckTagText || "STUDIO ARCHIVE";
-    state.neckTagSub = data.neckTagSub || "HEAVYWEIGHT • L";
-    state.neckTagDark = data.neckTagDark ?? false;
+    state.neckTagText = data.neckTagText || "GOOD LUCK DEPT.";
+    state.neckTagSub = data.neckTagSub || "MINERAL WASH • XL";
+    state.neckTagDark = data.neckTagDark ?? true;
     state.layers = data.layers || { front: [], back: [] };
 
     const activeList = state.layers[state.activeView] || [];
@@ -1155,7 +1253,6 @@
 
   function saveToLocalLibrary() {
     try {
-      // Generate thumbnail
       const thumbCanvas = document.createElement("canvas");
       thumbCanvas.width = 250;
       thumbCanvas.height = 280;
@@ -1174,7 +1271,7 @@
       renderSavedDesignsList();
       showToast(`Saved "${state.projectName}" to Local Studio Library`);
     } catch (e) {
-      showToast("Storage full — use Export JSON for very large PNGs");
+      showToast("Storage full — use Save File (.json) for very large PNGs");
     }
   }
 
@@ -1183,7 +1280,7 @@
   // --------------------------------------------------------------------------
   function exportCurrentMockupPNG() {
     const out = document.createElement("canvas");
-    out.width = CANVAS_W * 2; // 2000 x 2240 Ultra HD
+    out.width = CANVAS_W * 2;
     out.height = CANVAS_H * 2;
     const oCtx = out.getContext("2d");
 
@@ -1225,16 +1322,13 @@
     tpCanvas.height = 1360;
     const tCtx = tpCanvas.getContext("2d");
 
-    // Studio Tech Pack Board Background
     tCtx.fillStyle = "#0e1015";
     tCtx.fillRect(0, 0, 2200, 1360);
 
-    // Subtle technical grid border
     tCtx.strokeStyle = "rgba(255,255,255,0.12)";
     tCtx.lineWidth = 2;
     tCtx.strokeRect(40, 40, 2120, 1280);
 
-    // Header Bar
     tCtx.fillStyle = "#161922";
     tCtx.fillRect(40, 40, 2120, 110);
     tCtx.strokeRect(40, 40, 2120, 110);
@@ -1247,14 +1341,11 @@
     tCtx.fillStyle = "#9ca3af";
     tCtx.font = "600 18px monospace";
     tCtx.fillText(
-      `SPEC SHEET // STYLE: ${spec.name.toUpperCase()} (${spec.fit}) // DATE: ${new Date()
-        .toISOString()
-        .slice(0, 10)}`,
+      `SPEC SHEET // STYLE: ${spec.name.toUpperCase()} (${spec.fit}) // WASH: ${state.washMode.toUpperCase()}`,
       80,
       128
     );
 
-    // Render Front View on Left
     const frontOff = document.createElement("canvas");
     frontOff.width = CANVAS_W;
     frontOff.height = CANVAS_H;
@@ -1266,7 +1357,6 @@
     tCtx.textAlign = "center";
     tCtx.fillText("A. FRONT VIEW MOCKUP", 520, 1210);
 
-    // Render Back View in Center
     const backOff = document.createElement("canvas");
     backOff.width = CANVAS_W;
     backOff.height = CANVAS_H;
@@ -1274,7 +1364,6 @@
     tCtx.drawImage(backOff, 920, 185, 860, 963);
     tCtx.fillText("B. BACK VIEW MOCKUP", 1350, 1210);
 
-    // Right Spec Column
     tCtx.textAlign = "left";
     tCtx.strokeStyle = "rgba(255,255,255,0.12)";
     tCtx.beginPath();
@@ -1316,11 +1405,13 @@
     sy += 34;
     tCtx.fillStyle = "#e5e7eb";
     tCtx.font = "500 16px monospace";
-    tCtx.fillText(`Vintage Wash: ${state.vintageWash}%`, 1815, sy);
+    tCtx.fillText(`Finish: ${state.washMode.toUpperCase()} (${state.washScale})`, 1815, sy);
+    sy += 28;
+    tCtx.fillText(`Acid/Wash Intensity: ${state.vintageWash}%`, 1815, sy);
+    sy += 28;
+    tCtx.fillText(`Seam Stone Abrasion: ${state.seamAbrasion}%`, 1815, sy);
     sy += 28;
     tCtx.fillText(`Weave Weight: ${state.fabricTexture}%`, 1815, sy);
-    sy += 28;
-    tCtx.fillText(`Neck Label: ${state.neckTagEnabled ? state.neckTagText : "None"}`, 1815, sy);
 
     sy += 54;
     tCtx.fillStyle = "#6366f1";
@@ -1410,7 +1501,6 @@
     }
 
     container.innerHTML = "";
-    // Show top-most layer first
     [...list].reverse().forEach((layer) => {
       const row = document.createElement("div");
       row.className = `layer-item ${layer.id === state.selectedLayerId ? "active" : ""}`;
@@ -1508,20 +1598,16 @@
   }
 
   function syncUIFromState() {
-    // Project name
     document.getElementById("projectNameInput").value = state.projectName;
 
-    // View toggle buttons
     document.querySelectorAll("[data-view]").forEach((btn) => {
       btn.classList.toggle("active", btn.dataset.view === state.activeView);
     });
 
-    // Garment Style buttons
     document.querySelectorAll("[data-garment]").forEach((btn) => {
       btn.classList.toggle("active", btn.dataset.garment === state.garmentStyle);
     });
 
-    // Swatches
     document.querySelectorAll(".swatch").forEach((sw) => {
       sw.classList.toggle(
         "active",
@@ -1529,7 +1615,6 @@
       );
     });
 
-    // Color inputs
     document.getElementById("bodyColorPicker").value = state.bodyColor;
     document.getElementById("bodyHexInput").value = state.bodyColor.toUpperCase();
 
@@ -1541,13 +1626,31 @@
     document.getElementById("collarColorRow").style.display = state.syncCollar ? "none" : "flex";
     document.getElementById("collarColorPicker").value = state.collarColor;
 
-    // Wash & Texture Sliders
-    document.getElementById("fabricTextureSlider").value = state.fabricTexture;
-    document.getElementById("fabricTextureVal").textContent = `${state.fabricTexture}%`;
+    // Fabric Wash Mode & Scale
+    const washSelect = document.getElementById("washModeSelect");
+    if (washSelect) washSelect.value = state.washMode;
+
+    document.querySelectorAll("[data-wash-scale]").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.washScale === state.washScale);
+    });
+
+    const scaleRow = document.getElementById("acidScaleRow");
+    if (scaleRow) {
+      scaleRow.style.display = state.washMode === "acid-wash" ? "flex" : "none";
+    }
+
     document.getElementById("vintageWashSlider").value = state.vintageWash;
     document.getElementById("vintageWashVal").textContent = `${state.vintageWash}%`;
 
-    // Toggles
+    const seamSlider = document.getElementById("seamAbrasionSlider");
+    if (seamSlider) {
+      seamSlider.value = state.seamAbrasion;
+      document.getElementById("seamAbrasionVal").textContent = `${state.seamAbrasion}%`;
+    }
+
+    document.getElementById("fabricTextureSlider").value = state.fabricTexture;
+    document.getElementById("fabricTextureVal").textContent = `${state.fabricTexture}%`;
+
     document.getElementById("showGuidesToggle").checked = state.showPrintGuides;
     document.getElementById("clipPrintBoxToggle").checked = state.clipToPrintBox;
     document.getElementById("neckTagToggle").checked = state.neckTagEnabled;
@@ -1596,7 +1699,7 @@
       document.getElementById("bgKnockoutSubControls").style.display = active.removeBg
         ? "flex"
         : "none";
-      document.getElementById("bgKeyColorPicker").value = active.bgKeyColor || "#ffffff";
+      document.getElementById("bgKeyColorPicker").value = active.bgKeyColor || "#000000";
       document.getElementById("bgToleranceSlider").value = active.bgTolerance ?? 28;
       document.getElementById("bgToleranceVal").textContent = `${active.bgTolerance ?? 28}%`;
 
@@ -1614,7 +1717,8 @@
 
       document.getElementById("textContentInput").value = active.text || "";
       document.getElementById("textColorPicker").value = active.color || "#ffffff";
-      document.getElementById("textFontSelect").value = active.fontFamily || "Inter, sans-serif";
+      document.getElementById("textFontSelect").value =
+        active.fontFamily || "Georgia, 'Times New Roman', serif";
       document.getElementById("textCurveSlider").value = active.curve || 0;
       document.getElementById("textCurveVal").textContent = `${active.curve || 0}°`;
       document.getElementById("textStrokeSlider").value = active.strokeWidth || 0;
@@ -1623,7 +1727,6 @@
   }
 
   function bindUIEvents() {
-    // Left Panel Tabs
     document.querySelectorAll(".panel-tab").forEach((tab) => {
       tab.addEventListener("click", () => {
         document.querySelectorAll(".panel-tab").forEach((t) => t.classList.remove("active"));
@@ -1635,7 +1738,6 @@
       });
     });
 
-    // File Upload Input & Dropzone
     const fileInput = document.getElementById("pngFileInput");
     const dropzone = document.getElementById("uploadDropzone");
 
@@ -1647,7 +1749,6 @@
       fileInput.value = "";
     });
 
-    // Global Drag & Drop PNG anywhere on window
     window.addEventListener("dragover", (e) => {
       e.preventDefault();
       dropzone.classList.add("drag-over");
@@ -1663,7 +1764,6 @@
       }
     });
 
-    // Global Paste Image from Clipboard
     window.addEventListener("paste", (e) => {
       const items = e.clipboardData?.items || [];
       for (const item of items) {
@@ -1674,13 +1774,11 @@
       }
     });
 
-    // Project Name
     document.getElementById("projectNameInput").addEventListener("input", (e) => {
       state.projectName = e.target.value || "Untitled Tee";
       saveAutosave();
     });
 
-    // Front / Back View Switcher
     document.querySelectorAll("[data-view]").forEach((btn) => {
       btn.addEventListener("click", () => {
         state.activeView = btn.dataset.view;
@@ -1691,7 +1789,6 @@
       });
     });
 
-    // Stage Backdrop Switcher
     document.querySelectorAll("[data-backdrop]").forEach((btn) => {
       btn.addEventListener("click", () => {
         state.backdrop = btn.dataset.backdrop;
@@ -1701,7 +1798,6 @@
       });
     });
 
-    // Garment Style Selector
     document.querySelectorAll("[data-garment]").forEach((btn) => {
       btn.addEventListener("click", () => {
         pushUndoSnapshot();
@@ -1711,6 +1807,10 @@
           state.syncSleeves = false;
           state.collarColor = "#141416";
           state.sleeveColor = "#141416";
+        } else if (state.garmentStyle === "acid-oversized") {
+          state.washMode = "acid-wash";
+          if (state.vintageWash < 50) state.vintageWash = 78;
+          if (state.seamAbrasion < 50) state.seamAbrasion = 82;
         }
         saveAutosave();
         syncUIFromState();
@@ -1718,7 +1818,40 @@
       });
     });
 
-    // Color Pickers
+    // Fabric Wash Mode Selector & Acid Scale
+    const washSelect = document.getElementById("washModeSelect");
+    if (washSelect) {
+      washSelect.addEventListener("change", (e) => {
+        pushUndoSnapshot();
+        state.washMode = e.target.value;
+        if (state.washMode === "acid-wash" && state.vintageWash < 40) {
+          state.vintageWash = 78;
+          state.seamAbrasion = 82;
+        }
+        saveAutosave();
+        syncUIFromState();
+        requestRender();
+      });
+    }
+
+    document.querySelectorAll("[data-wash-scale]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        state.washScale = btn.dataset.washScale;
+        saveAutosave();
+        syncUIFromState();
+        requestRender();
+      });
+    });
+
+    const seamSlider = document.getElementById("seamAbrasionSlider");
+    if (seamSlider) {
+      seamSlider.addEventListener("input", (e) => {
+        state.seamAbrasion = +e.target.value;
+        document.getElementById("seamAbrasionVal").textContent = `${state.seamAbrasion}%`;
+        requestRender();
+      });
+    }
+
     document.getElementById("bodyColorPicker").addEventListener("input", (e) => {
       state.bodyColor = e.target.value;
       if (state.syncSleeves) state.sleeveColor = state.bodyColor;
@@ -1763,7 +1896,6 @@
       requestRender();
     });
 
-    // Fabric Realism & Vintage Wash Sliders
     document.getElementById("fabricTextureSlider").addEventListener("input", (e) => {
       state.fabricTexture = +e.target.value;
       document.getElementById("fabricTextureVal").textContent = `${state.fabricTexture}%`;
@@ -1776,7 +1908,6 @@
       requestRender();
     });
 
-    // Print Guides & Clipping
     document.getElementById("showGuidesToggle").addEventListener("change", (e) => {
       state.showPrintGuides = e.target.checked;
       requestRender();
@@ -1787,7 +1918,6 @@
       requestRender();
     });
 
-    // Neck Tag Controls
     document.getElementById("neckTagToggle").addEventListener("change", (e) => {
       state.neckTagEnabled = e.target.checked;
       requestRender();
@@ -1805,10 +1935,8 @@
       requestRender();
     });
 
-    // Add Text Layer Button
     document.getElementById("addTextLayerBtn").addEventListener("click", addTextLayer);
 
-    // Active Layer Inspector Controls
     document.getElementById("layerScaleSlider").addEventListener("input", (e) => {
       const l = getActiveLayer();
       if (!l) return;
@@ -1840,12 +1968,10 @@
       requestRender();
     });
 
-    // Placement Presets
     document.querySelectorAll("[data-preset]").forEach((btn) => {
       btn.addEventListener("click", () => applyPlacementPreset(btn.dataset.preset));
     });
 
-    // Flip / Center / Duplicate / Delete Buttons
     document.getElementById("flipHBtn").addEventListener("click", () => {
       const l = getActiveLayer();
       if (!l) return;
@@ -1870,7 +1996,6 @@
       if (l) deleteLayer(l.id);
     });
 
-    // Image Specific Filters (Background Knockout, Tint, Distress, Brightness/Contrast)
     document.getElementById("removeBgToggle").addEventListener("change", (e) => {
       const l = getActiveLayer();
       if (!l) return;
@@ -1878,6 +2003,34 @@
       syncLayerInspectorValues();
       requestRender();
     });
+
+    const koBlackBtn = document.getElementById("knockoutBlackBtn");
+    if (koBlackBtn) {
+      koBlackBtn.addEventListener("click", () => {
+        const l = getActiveLayer();
+        if (!l || l.type !== "image") return;
+        l.removeBg = true;
+        l.bgKeyColor = "#000000";
+        l.bgTolerance = 32;
+        syncLayerInspectorValues();
+        requestRender();
+        showToast("Knocked out black background so Acid Wash shows through!");
+      });
+    }
+
+    const koWhiteBtn = document.getElementById("knockoutWhiteBtn");
+    if (koWhiteBtn) {
+      koWhiteBtn.addEventListener("click", () => {
+        const l = getActiveLayer();
+        if (!l || l.type !== "image") return;
+        l.removeBg = true;
+        l.bgKeyColor = "#ffffff";
+        l.bgTolerance = 28;
+        syncLayerInspectorValues();
+        requestRender();
+        showToast("Knocked out white background!");
+      });
+    }
 
     document.getElementById("bgKeyColorPicker").addEventListener("input", (e) => {
       const l = getActiveLayer();
@@ -1932,7 +2085,6 @@
       requestRender();
     });
 
-    // Text Specific Controls
     document.getElementById("textContentInput").addEventListener("input", (e) => {
       const l = getActiveLayer();
       if (!l || l.type !== "text") return;
@@ -1978,9 +2130,7 @@
       requestRender();
     });
 
-    // Topbar Actions (Undo, Reset, Save Local, Export JSON, Import JSON, Tech Pack, Export PNG)
     document.getElementById("undoBtn").addEventListener("click", undo);
-
     document.getElementById("saveLibraryBtn").addEventListener("click", saveToLocalLibrary);
 
     document.getElementById("exportJsonBtn").addEventListener("click", () => {
@@ -2053,9 +2203,6 @@
     });
   }
 
-  // --------------------------------------------------------------------------
-  // UTILITIES
-  // --------------------------------------------------------------------------
   function shadeHexColor(hex, percent) {
     const { r, g, b } = hexToRgb(hex);
     const amt = Math.round(2.55 * percent);
